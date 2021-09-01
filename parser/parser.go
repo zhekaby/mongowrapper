@@ -16,7 +16,6 @@ import (
 var (
 	structCommentCollection  = "mongowrapper:collection"
 	structCommentAggregation = "mongowrapper:aggregation"
-	structCommentSwagger     = "swagger:parameters"
 	bodyComment              = "in: body"
 )
 
@@ -121,9 +120,6 @@ func (v *visitor) Visit(n ast.Node) (w ast.Visitor) {
 	case *ast.GenDecl:
 		args := v.needType(n.Doc, structCommentCollection)
 		if len(args) == 0 {
-			args = v.needType(n.Doc, structCommentSwagger)
-		}
-		if len(args) == 0 {
 			args = v.needType(n.Doc, structCommentAggregation)
 		}
 
@@ -164,41 +160,6 @@ func (v *visitor) Visit(n ast.Node) (w ast.Visitor) {
 				Name:   args[1],
 				Fields: fields,
 			})
-		}
-
-		args = v.needType(n.Doc, structCommentSwagger)
-		if len(args) > 0 {
-			if s, ok := n.Type.(*ast.StructType); ok {
-				for _, f := range s.Fields.List {
-					if needField(f, bodyComment) {
-						ident, ok := f.Type.(*ast.StarExpr).X.(*ast.Ident)
-						if !ok {
-							return nil
-						}
-						var st *ast.StructType
-						if ident.Obj == nil {
-							st = v.Decls[ident.Name]
-						} else {
-							st, ok = ident.Obj.Decl.(*ast.TypeSpec).Type.(*ast.StructType)
-							if !ok {
-								st, ok = f.Type.(*ast.StructType)
-								if !ok {
-									return nil
-								}
-							}
-						}
-						name := ident.Name
-						fields := make([]Field, 0, 100)
-						deep(st, Field{Ns: name}, &fields)
-						v.Structs = append(v.Structs, &StructInfo{
-							Name:         n.Name.Name,
-							Body:         st,
-							BodyTypeName: name,
-							Fields:       fields,
-						})
-					}
-				}
-			}
 		}
 
 		return nil
@@ -242,18 +203,6 @@ func (p *Parser) needType(comments *ast.CommentGroup, reqComment string) (argume
 	}
 
 	return
-}
-
-func needField(f *ast.Field, reqComment string) bool {
-	if f.Doc == nil {
-		return false
-	}
-	for _, c := range f.Doc.List {
-		if strings.Contains(c.Text, reqComment) {
-			return true
-		}
-	}
-	return false
 }
 
 func excludeTestFiles(fi os.FileInfo) bool {
