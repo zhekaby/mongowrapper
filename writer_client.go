@@ -2,7 +2,6 @@ package main
 
 var writerClient = `{{ $tick := "` + "`" + `" }}
 import (
-	"fmt"
 	"context"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -17,7 +16,6 @@ var database *mongo.Database
 
 func newClient(ctx context.Context, cs string) *mongo.Client {
 	once.Do(func() {
-		fmt.Printf("cs: %s\n", cs)
 		u, err := url.Parse(cs)
 		if err != nil {
 			panic(err)
