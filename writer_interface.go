@@ -45,9 +45,11 @@ type {{ .Name }}Repository struct {
 func New{{ .Typ }}RepositoryDefault(ctx context.Context) {{ .Typ }}Repository {
 	{{if $.CsVar }}
 	cs := os.Getenv("{{ $.CsVar }}")
+	{{if $.Cs }}
 	if cs == "" {
 		cs = "{{ $.Cs }}"
 	}
+	{{end}}
 	client := newClient(ctx, cs)
 	{{else}}
 	client := newClient(ctx, "{{ $.Cs }}")
