@@ -1,5 +1,7 @@
 package tests
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 //mongowrapper:aggregation users
 type UserView struct {
 	Email   string  `bson:"email"`
@@ -8,8 +10,9 @@ type UserView struct {
 
 //mongowrapper:collection users
 type User struct {
-	Email   string  `bson:"email"`
-	Profile Profile `bson:"profile"`
+	Id      primitive.ObjectID `bson:"_id,omitempty"`
+	Email   string             `bson:"email"`
+	Profile Profile            `bson:"profile"`
 	Address struct {
 		City string
 	} `bson:"address"`

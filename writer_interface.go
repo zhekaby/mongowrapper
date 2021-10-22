@@ -20,9 +20,9 @@ type {{ .Typ }}Repository interface {
 	Exists(ctx context.Context, findQuery bson.M) (bool, error)
 	FindOneById(ctx context.Context, id string) (*{{ .Typ }}, error)
 	ExistsById(ctx context.Context, id string) (bool, error)
-	FindMany(ctx context.Context, findQuery bson.M, sort bson.D, skip, limit int64) ([]*{{ .Typ }}, error)
+	FindMany(ctx context.Context, findQuery bson.M, sort bson.D, skip, limit int64) (ArrayOf{{ .Typ }}, error)
 	InsertOne(ctx context.Context, record *{{ .Typ }}) (InsertedID primitive.ObjectID, err error)
-	InsertMany(ctx context.Context, records []*{{ .Typ }}) (InsertedID []primitive.ObjectID, err error)
+	InsertMany(ctx context.Context, records ArrayOf{{ .Typ }}) (InsertedID []primitive.ObjectID, err error)
 	UpdateOne(ctx context.Context, findQuery, updateQuery bson.M) (matched bool, modified bool, err error)
 	UpdateOneById(ctx context.Context, id string, updateQuery bson.M) (matched bool, modified bool, err error)
 	UpdateOneFluent(ctx context.Context, findQuery bson.M, updater {{ .Typ }}Updater) (matched bool, modified bool, err error)
@@ -36,6 +36,7 @@ type {{ .Typ }}Repository interface {
 {{end}}
 }
 
+type ArrayOf{{ .Typ }} []*{{ .Typ }}
 type {{ .Name }}Repository struct {
 	client *mongo.Client
 	ctx    context.Context
@@ -80,7 +81,7 @@ func (s *{{ .Name }}Repository) Ping() error {
 	return s.client.Ping(ctx, readpref.Primary())
 }
 
-func (s *{{ .Name }}Repository) FindMany(ctx context.Context, findQuery bson.M, sort bson.D, skip, limit int64) ([]*{{ .Typ }}, error) {
+func (s *{{ .Name }}Repository) FindMany(ctx context.Context, findQuery bson.M, sort bson.D, skip, limit int64) (ArrayOf{{ .Typ }}, error) {
 	opts := &options.FindOptions{}
 	opts.SetLimit(limit)
 	opts.SetSkip(skip)
@@ -92,7 +93,7 @@ func (s *{{ .Name }}Repository) FindMany(ctx context.Context, findQuery bson.M, 
 		}
 		return nil, err
 	} else {
-		records := make([]*{{ .Typ }}, 0, limit)
+		records := make(ArrayOf{{ .Typ }}, 0, limit)
 		for cursor.Next(ctx) {
 			t := {{ .Typ }}{}
 			err := cursor.Decode(&t)
@@ -167,7 +168,7 @@ func (s *{{ .Name }}Repository) InsertOne(ctx context.Context, record *{{ .Typ }
 	return res.InsertedID.(primitive.ObjectID), err
 }
 
-func (s *{{ .Name }}Repository) InsertMany(ctx context.Context, records []*{{ .Typ }}) (InsertedID []primitive.ObjectID, err error) {
+func (s *{{ .Name }}Repository) InsertMany(ctx context.Context, records ArrayOf{{ .Typ }}) (InsertedID []primitive.ObjectID, err error) {
 	data := make([]interface{}, len(records))
 	for i := range records {
 		data[i] = records[i]
@@ -302,5 +303,18 @@ type {{ .Typ }}ChangeEvent struct {
 		Db   string {{ $tick }}bson:"db"{{ $tick }}
 		Coll string {{ $tick }}bson:"coll"{{ $tick }}
 	} {{ $tick }}bson:"ns"{{ $tick }}
+}
+{{range .Fields}}{{ if eq .BsonPath "_id" }}
+func (entity *{{ $.Typ }}) GetId() primitive.ObjectID {
+	return entity.{{ .GoPath }}
+}
+{{end}}{{end}}
+
+func (entities ArrayOf{{ .Typ }}) AsIdAware() []IdAware {
+	res := make([]IdAware, len(entities))
+	for i, v := range entities {
+		res[i] = v
+	}
+	return res
 }
 `

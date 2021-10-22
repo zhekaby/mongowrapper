@@ -3,6 +3,7 @@ package main
 var writerClient = `{{ $tick := "` + "`" + `" }}
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -13,6 +14,10 @@ import (
 var once sync.Once
 var client *mongo.Client
 var database *mongo.Database
+
+type IdAware interface {
+	GetId() primitive.ObjectID
+}
 
 func newClient(ctx context.Context, cs string) *mongo.Client {
 	once.Do(func() {
