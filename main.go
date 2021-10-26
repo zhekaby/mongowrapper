@@ -10,6 +10,7 @@ import (
 var cs = flag.String("cs", "", "default connection string")
 var csVar = flag.String("cs_var", "", "env var name represents connection string")
 var dbVar = flag.String("db_var", "", "env var name represents db to connect, otherwise db is taken from connection string")
+var addGitIgnore = flag.String("add-gitignore", "", "add .gitignore to exclude generated files")
 
 func main() {
 	flag.Parse()
@@ -37,7 +38,7 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		w := NewWriter(*cs, *csVar, *dbVar, p)
+		w := NewWriter(*cs, *csVar, *dbVar, p, len(*addGitIgnore) > 0)
 
 		if err := w.Write(); err != nil {
 			fmt.Println(err)

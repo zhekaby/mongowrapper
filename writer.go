@@ -11,30 +11,23 @@ type writer struct {
 	Cs, CsVar, DbVar string
 	*parser.Parser
 	*parser.DataView
+	addGitignore bool
 }
 
-func NewWriter(cs, csVar, dbVar string, p *parser.Parser) *writer {
-	return &writer{Cs: cs, CsVar: csVar, DbVar: dbVar, Parser: p}
+func NewWriter(cs, csVar, dbVar string, p *parser.Parser, addGitignore bool) *writer {
+	return &writer{Cs: cs, CsVar: csVar, DbVar: dbVar, Parser: p, addGitignore: addGitignore}
 }
 
 func (w *writer) Write() error {
-	fnGitignore := fmt.Sprintf("%s/.gitignore", w.Dir)
-	_ = os.Remove(fnGitignore)
-	gitignore, err := os.Create(fnGitignore)
-	if err != nil {
-		return err
-	}
-	defer gitignore.Close()
+
+
 	fn := fmt.Sprintf("%s/client.go", w.Dir)
-	fmt.Fprintf(gitignore, "client.go\n")
 	if err := w.writeClient(fn); err != nil {
 		return err
 	}
 	for _, c := range w.Collections {
 		w.DataView = c
 		fn := fmt.Sprintf("%s/repository_%s.go", w.Dir, w.DataView.Name)
-		fmt.Fprintf(gitignore, fmt.Sprintf("repository_%s.go\n", w.DataView.Name))
-
 		if err := w.writeCollections(fn); err != nil {
 			return err
 		}
@@ -46,7 +39,22 @@ func (w *writer) Write() error {
 			return err
 		}
 	}
-	fmt.Fprintf(gitignore, "aggregation_funcs.go\n")
+
+	if w.addGitignore {
+		fnGitignore := fmt.Sprintf("%s/.gitignore", w.Dir)
+		_ = os.Remove(fnGitignore)
+		gitignore, err := os.Create(fnGitignore)
+		if err != nil {
+			return err
+		}
+		defer gitignore.Close()
+		fmt.Fprintf(gitignore, "client.go\n")
+		for _, c := range w.Collections {
+			fmt.Fprintf(gitignore, fmt.Sprintf("repository_%s.go\n", c.Name))
+		}
+		fmt.Fprintf(gitignore, "aggregation_funcs.go\n")
+	}
+
 	return nil
 }
 
