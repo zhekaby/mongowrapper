@@ -36,10 +36,12 @@ type StructInfo struct {
 type Field struct {
 	Prop, Type, JsonProp, JsonPath, BsonProp, BsonPath, GoPath, Ns, NsShort, NsCompact, Tag string
 	Validations                                                                             map[string]string
+	IsId                                                                                    bool
 }
 type DataView struct {
-	Typ, Name string
-	Fields    []Field
+	Typ, Name, IdGoPath string
+	Fields              []Field
+	HasId               bool
 }
 
 type visitor struct {
@@ -142,10 +144,20 @@ func (v *visitor) Visit(n ast.Node) (w ast.Visitor) {
 
 			fields := make([]Field, 0, 100)
 			deep(n.Type, Field{}, &fields)
+			hasId, idGoPath := false, ""
+			for _, f := range fields {
+				if f.IsId {
+					hasId = true
+					idGoPath = f.GoPath
+					break
+				}
+			}
 			v.Parser.Collections = append(v.Parser.Collections, &DataView{
-				Typ:    v.name,
-				Name:   args[1],
-				Fields: fields,
+				Typ:      v.name,
+				Name:     args[1],
+				Fields:   fields,
+				HasId:    hasId,
+				IdGoPath: idGoPath,
 			})
 		}
 
@@ -297,6 +309,7 @@ func deep(n ast.Node, f Field, fields *[]Field) {
 		ns := f.GoPath + "." + f.Prop
 		idx := strings.IndexByte(ns, byte('.'))
 		f := &Field{
+			IsId:        f.BsonProp == "_id",
 			Prop:        f.Prop,
 			GoPath:      f.GoPath + f.Prop,
 			JsonProp:    f.JsonProp,

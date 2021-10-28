@@ -304,11 +304,10 @@ type {{ .Typ }}ChangeEvent struct {
 		Coll string {{ $tick }}bson:"coll"{{ $tick }}
 	} {{ $tick }}bson:"ns"{{ $tick }}
 }
-{{range .Fields}}{{ if eq .BsonPath "_id" }}
+{{ if $.HasId }}
 func (entity *{{ $.Typ }}) GetId() primitive.ObjectID {
-	return entity.{{ .GoPath }}
+	return entity.{{ $.IdGoPath }}
 }
-{{end}}{{end}}
 
 func (entities ArrayOf{{ .Typ }}) AsIdAware() []IdAware {
 	res := make([]IdAware, len(entities))
@@ -317,4 +316,17 @@ func (entities ArrayOf{{ .Typ }}) AsIdAware() []IdAware {
 	}
 	return res
 }
+
+func (entities ArrayOf{{ .Typ }}) AsLookupById() map[primitive.ObjectID]*{{ .Typ }} {
+	ids := make(map[primitive.ObjectID]*{{ .Typ }}, len(entities))
+	for _, e := range entities {
+		ids[e.{{ $.IdGoPath }}] = e
+	}
+	return ids
+}
+{{end}}
+
+
+
+
 `
