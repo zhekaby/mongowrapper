@@ -3,8 +3,11 @@ package tests
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+type ArrayOfUserView []*UserView
 
 func (s *usersRepository) AggregateToUserView(ctx context.Context, pipeline mongo.Pipeline, limit int) ([]*UserView, error) {
 	if cursor, err := s.c.Aggregate(ctx, pipeline); err != nil {
@@ -25,4 +28,24 @@ func (s *usersRepository) AggregateToUserView(ctx context.Context, pipeline mong
 		}
 		return records, nil
 	}
+}
+
+func (vUserView *UserView) GetId() primitive.ObjectID {
+	return vUserView.Id
+}
+
+func (entities ArrayOfUserView) AsIdAware() []IdAware {
+	res := make([]IdAware, len(entities))
+	for i, v := range entities {
+		res[i] = v
+	}
+	return res
+}
+
+func (entities ArrayOfUserView) AsLookupById() map[primitive.ObjectID]*UserView {
+	ids := make(map[primitive.ObjectID]*UserView, len(entities))
+	for _, e := range entities {
+		ids[e.Id] = e
+	}
+	return ids
 }

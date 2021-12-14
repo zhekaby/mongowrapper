@@ -4,8 +4,9 @@ import "go.mongodb.org/mongo-driver/bson/primitive"
 
 //mongowrapper:aggregation users
 type UserView struct {
-	Email   string  `bson:"email"`
-	Profile Profile `bson:"profile"`
+	Id      primitive.ObjectID `bson:"_id"`
+	Email   string             `bson:"email"`
+	Profile Profile            `bson:"profile"`
 }
 
 //mongowrapper:collection users
